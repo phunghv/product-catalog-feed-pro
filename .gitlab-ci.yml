@@ -1,0 +1,20 @@
+stages:
+  - deploy
+ 
+deploy_master:
+  stage: deploy
+  script:
+  - if [ -z "$CREDENTIALS" ] || [ -z "$FTP_FOLDER" ]; then echo "Need to set variables"; exit 1; fi
+  - lftp -e "mirror --exclude ^\.git.* --exclude \.gitlab-ci.yaml -eRv  $CI_PROJECT_DIR $FTP_FOLDER; quit;" ftp://$CREDENTIALS
+  
+  - if [ -z "$CREDENTIALS_MASTER" ] || [ -z "$DEP_FOLDER_MASTER" ]; then echo "Need to set variables"; exit 1; fi
+  - if [ -z "$SSH_PORT_MASTER" ]; then SSH_PORT_MASTER=22; fi
+  - 
+    rsync -avuz -e 'ssh -p '$SSH_PORT_MASTER --delete 
+        --exclude "/.git/" 
+        --exclude "/.gitlab-ci.yml"
+        --exclude "/.gitignore"
+        --exclude "/.idea/"
+        ./ $CREDENTIALS_MASTER:$DEP_FOLDER_MASTER/
+  only:
+  - master
